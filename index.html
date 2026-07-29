@@ -243,6 +243,8 @@
   }
   .outing-group + .outing { margin-top: 1.1rem; }
   .outing { margin-top: 1.6rem; }
+  .outing + .fleuron { margin: 2.2rem auto; }
+  .fleuron + .outing-group { margin-top: 0; padding-top: 0; border-top: none; }
   .outing h4 {
     font-weight: 600;
     color: var(--green-deep);
@@ -421,8 +423,7 @@
       </ul>
     </div>
   </section>
-
-  <div class="fleuron" role="separator" aria-hidden="true"></div>
+</main>
 
 <!-- ============ QUOTE INTERLUDE III ============ -->
 <div class="interlude">
@@ -471,6 +472,8 @@
         <p>Indoor bouldering (a kind of rock climbing) at Ferntree Gully. Julian and Liesl have spent a lot of time here, falling off colourful shapes stuck to walls. Kids aged 12+ can climb. The bathrooms have showers, so you can rinse off before the reception.</p>
       </div>
 
+  <div class="fleuron" role="separator" aria-hidden="true"></div>
+      
       <h3 class="outing-group">And just before the ceremony</h3>
       <div class="outing">
         <h4><a href="https://www.cognoscentifoodandwine.com/">Cognoscenti Food &amp; Wine</a> <span class="tag">civilised</span></h4>
@@ -498,7 +501,7 @@
     { text: "What greater thing is there for two human souls than to feel that they are joined for life.", attr: "George Eliot" },
     { text: "Love is not love which alters when it alteration finds.", attr: "William Shakespeare, Sonnet 116" },
     { text: "You pierce my soul. I am half agony, half hope.", attr: "Jane Austen, Persuasion" },
-    { text: "All you need is love (ba ba ba ba ba), all you need is love (ba ba ba ba ba), all you need is love, love, love is all you need.", attr: "The Beatles" },  // empty slot — add your own favourites here
+    { text: "All you need is love (ba ba ba ba ba), all you need is love (ba ba ba ba ba), all you need is love, love, love is all you need.", attr: "The Beatles" }, 
   ];
   const usable = quotes.filter(q => q.text !== "");
   let i = 0;
