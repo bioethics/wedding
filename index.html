@@ -187,6 +187,38 @@
   }
   .quote-fading .quote-text, .quote-fading .quote-attr { opacity: 0; }
 
+  /* one small mark per quote — sits below the box, so the reserved height
+     keeps it still while the quote above it changes length */
+  .quote-nav {
+    display: flex;
+    justify-content: center;
+    margin-top: 1.4rem;
+  }
+  .quote-nav button {
+    appearance: none;
+    -webkit-appearance: none;
+    background: none;
+    border: 0;
+    line-height: 0;
+    cursor: pointer;
+    padding: .55rem;   /* invisible, and only there to give a finger something to hit */
+  }
+  .quote-nav span {
+    display: block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    border: 1px solid var(--green-moss);
+    opacity: .45;
+    transition: opacity .5s ease, background-color .5s ease;
+  }
+  .quote-nav button:hover span,
+  .quote-nav button:focus-visible span { opacity: .8; }
+  .quote-nav button[aria-current="true"] span {
+    background: var(--green-moss);
+    opacity: 1;
+  }
+
   /* ---------- details grid ---------- */
   .detail-cols {
     display: grid;
@@ -566,6 +598,10 @@
       i: 0,
       timer: null,
       running: false,
+      onScreen: false,
+      taken: false,     /* set once the reader works the dots themselves */
+      gen: 0,           /* guards against two fades racing each other */
+      dots: null,
       measuredAt: -1,   /* the box width the reserved height was worked out at */
     })
   ).filter(b => b.list.length > 0);
@@ -604,11 +640,13 @@
     b.timer = setTimeout(() => advance(b), hold(b.list[b.i]));
   }
 
-  function advance(b) {
-    const next = (b.i + 1) % b.list.length;
+  function show(b, next) {
+    const mine = ++b.gen;
     const swap = () => {
+      if (mine !== b.gen) return;   /* a dot was pressed while this was fading */
       b.i = next;
       paint(b, next);
+      markDots(b);
       b.box.classList.remove('quote-fading');
       if (b.running) schedule(b);   /* may have scrolled away mid-fade */
     };
@@ -618,8 +656,10 @@
     setTimeout(swap, FADE);
   }
 
+  function advance(b) { show(b, (b.i + 1) % b.list.length); }
+
   function start(b) {
-    if (b.running || b.list.length < 2) return;
+    if (b.running || b.taken || !b.onScreen || b.list.length < 2) return;
     b.running = true;
     schedule(b);
   }
@@ -628,6 +668,53 @@
     clearTimeout(b.timer);
     b.timer = null;
   }
+
+  /* ---------- the dots ---------- */
+  function markDots(b) {
+    if (!b.dots) return;
+    b.dots.forEach((dot, n) => {
+      if (n === b.i) dot.setAttribute('aria-current', 'true');
+      else dot.removeAttribute('aria-current');
+    });
+  }
+
+  function buildDots(b) {
+    if (b.list.length < 2) return;
+    const nav = document.createElement('div');
+    nav.className = 'quote-nav';
+    nav.setAttribute('role', 'group');
+    nav.setAttribute('aria-label', 'Choose a quote');
+    b.dots = b.list.map((q, n) => {
+      const dot = document.createElement('button');
+      dot.type = 'button';
+      dot.setAttribute('aria-label', 'Quote ' + (n + 1) + ' of ' + b.list.length);
+      dot.appendChild(document.createElement('span'));
+      dot.addEventListener('click', () => {
+        /* the reader is steering now — leave the band where they put it */
+        b.taken = true;
+        stop(b);
+        if (n !== b.i) show(b, n);
+      });
+      nav.appendChild(dot);
+      return dot;
+    });
+    b.box.insertAdjacentElement('afterend', nav);
+    markDots(b);
+  }
+
+  /* Hovering or tabbing into a band holds it still, so a quote can't slip
+     away mid-sentence while it is being read. */
+  function watchAttention(b) {
+    const zone   = b.box.parentElement;   /* the whole band, dots included */
+    const pause  = () => stop(b);
+    const resume = () => start(b);        /* start() declines if taken or off screen */
+    zone.addEventListener('pointerenter', pause);
+    zone.addEventListener('pointerleave', resume);
+    zone.addEventListener('focusin', pause);
+    zone.addEventListener('focusout', resume);
+  }
+
+  blocks.forEach(b => { buildDots(b); watchAttention(b); });
 
   reserve();
   /* the webfont lands after first paint and changes the metrics — measure again */
@@ -656,18 +743,19 @@
   }
 
   /* Only run a band's timer while it is on screen, so a quote is always
-     given its full nine seconds from the moment you scroll to it. */
+     given its full reading time from the moment you scroll to it. */
   if ('IntersectionObserver' in window) {
     const seen = new IntersectionObserver(entries => {
       entries.forEach(e => {
         const b = blocks.find(x => x.box === e.target);
         if (!b) return;
+        b.onScreen = e.isIntersecting;
         if (e.isIntersecting) { start(b); } else { stop(b); }
       });
     }, { threshold: 0.35 });
     blocks.forEach(b => seen.observe(b.box));
   } else {
-    blocks.forEach(start);
+    blocks.forEach(b => { b.onScreen = true; start(b); });
   }
 </script>
 
