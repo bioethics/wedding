@@ -154,12 +154,28 @@
     text-align: center;
     padding: 4rem 1.5rem;
   }
-  .quote-box { max-width: 560px; margin: 0 auto; min-height: 7.5rem; }
+  .quote-box {
+    max-width: 560px;
+    margin: 0 auto;
+    min-height: 7.5rem;          /* floor if the script never runs */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;      /* short quotes sit centred in the reserved space */
+  }
   .quote-text {
     font-style: italic;
     font-size: 1.25rem;
     line-height: 1.6;
-    transition: opacity .9s ease;
+    text-wrap: pretty;
+    transition: opacity 1.6s ease-in-out;
+  }
+  /* long quotes step down a size so one epic doesn't stretch the whole band */
+  .quote-text.is-long  { font-size: 1.12rem; line-height: 1.58; }
+  .quote-text.is-xlong { font-size: 1rem;    line-height: 1.55; }
+  @media (max-width: 560px) {
+    .quote-text          { font-size: 1.15rem; }
+    .quote-text.is-long  { font-size: 1.05rem; }
+    .quote-text.is-xlong { font-size: .95rem; }
   }
   .quote-attr {
     margin-top: .9rem;
@@ -167,7 +183,7 @@
     letter-spacing: .2em;
     font-size: .85rem;
     color: var(--green-moss);
-    transition: opacity .9s ease;
+    transition: opacity 1.6s ease-in-out;
   }
   .quote-fading .quote-text, .quote-fading .quote-attr { opacity: 0; }
 
@@ -303,15 +319,17 @@
   <div class="fleuron fleuron--hero" role="separator" aria-hidden="true"></div>
 </header>
 
-<!-- ============ QUOTE INTERLUDE ============ -->
+<main>
+
+<!-- ============ QUOTE INTERLUDE I ============ -->
 <div class="interlude" id="quotes">
-  <div class="quote-box" id="quoteBox" aria-live="polite">
-    <p class="quote-text" id="quoteText">What greater thing is there for two human souls than to feel that they are joined for life.</p>
-    <p class="quote-attr" id="quoteAttr">George Eliot</p>
+  <div class="quote-box" data-quotes="one">
+    <p class="quote-text">What greater thing is there for two human souls than to feel that they are joined for life.</p>
+    <p class="quote-attr">George Eliot</p>
   </div>
 </div>
 
-<main class="parchment">
+<div class="parchment">
 
   <!-- ============ DETAILS ============ -->
   <section id="details">
@@ -335,7 +353,7 @@
       </div>
       <div class="detail-note">
         <h3>Plus tiny ones</h3>
-        <p>Children are warmly welcome, and will be catered for. Kid-friendly food will be provided, and Earthy Pleasures has a large enough garden for some rumbunctious activity.</p>
+        <p>Children are warmly welcome, and will be catered for. Kid-friendly food will be provided, and Earthly Pleasures has a large enough garden for some rumbunctious activity.</p>
       </div>
     </div>
   </section>
@@ -384,17 +402,17 @@
     </div>
   </section>
 
-</main>
+</div>
 
 <!-- ============ QUOTE INTERLUDE II ============ -->
 <div class="interlude">
-  <div class="quote-box">
+  <div class="quote-box" data-quotes="two">
     <p class="quote-text">Whatever our souls are made of, his and mine are the same.</p>
-    <p class="quote-attr">Emily Brontë</p>
+    <p class="quote-attr">Emily Brontë, Wuthering Heights</p>
   </div>
 </div>
 
-<main class="parchment">
+<div class="parchment">
 
   <!-- ============ GIFTS ============ -->
   <section id="gifts">
@@ -412,7 +430,7 @@
           <span class="c-name"><a href="https://orangesky.org.au/locations/melbourne/">Orange Sky</a></span>
           <p class="c-why">A Melbourne charity that supports people experiencing homelessness through laundry, warm showers, and conversation.</p>
         </li>
-         <li>
+        <li>
           <span class="c-name"><a href="https://funds.effectivealtruism.org/funds/animal-welfare">Effective Altruism Animal Welfare Fund</a></span>
           <p class="c-why">A pooled fund to support high-impact interventions into animal welfare, particularly for farm animals.</p>
         </li>
@@ -423,20 +441,20 @@
       </ul>
     </div>
   </section>
-</main>
+</div>
 
 <!-- ============ QUOTE INTERLUDE III ============ -->
 <div class="interlude">
-  <div class="quote-box">
+  <div class="quote-box" data-quotes="three">
     <p class="quote-text">All you need is love (ba ba ba ba ba), all you need is love (ba ba ba ba ba), all you need is love, love, love is all you need.</p>
     <p class="quote-attr">The Beatles</p>
   </div>
 </div>
 
-<main class="parchment">
-  
+<div class="parchment">
+
   <!-- ============ MAKE A DAY OF IT ============ -->
-  <section id="dayofit" style="padding-top:0;">
+  <section id="dayofit">
     <div class="inner">
       <p class="eyebrow">chapter five</p>
       <h2>Make a day <span class="flourish">of it</span></h2>
@@ -486,6 +504,8 @@
     </div>
   </section>
 
+</div>
+
 </main>
 
 <!-- ============ FOOTER ============ -->
@@ -497,34 +517,158 @@
 </footer>
 
 <script>
-  const quotes = [
-    { text: "What greater thing is there for two human souls than to feel that they are joined for life.", attr: "George Eliot" },
-    { text: "Love is not love which alters when it alteration finds.", attr: "William Shakespeare, Sonnet 116" },
-    { text: "You pierce my soul. I am half agony, half hope.", attr: "Jane Austen, Persuasion" },
-    { text: "All you need is love (ba ba ba ba ba), all you need is love (ba ba ba ba ba), all you need is love, love, love is all you need.", attr: "The Beatles" }, 
-  ];
-  const usable = quotes.filter(q => q.text !== "");
-  let i = 0;
-  const box = document.getElementById('quoteBox');
-  const textEl = document.getElementById('quoteText');
-  const attrEl = document.getElementById('quoteAttr');
+  /* Each green band cycles through its own list of quotes. To add one, drop
+     another { text: "...", attr: "..." } line into the right list below —
+     "one" is the band under the names, "two" is before Gifts, "three" is
+     before Make a day of it. A list with a single quote just sits still.
+     Long quotes are fine: the band measures its tallest quote up front and
+     holds that height, so nothing jumps as they change, and each quote is
+     given reading time in proportion to its length. */
+  const quoteSets = {
+    one: [
+      { text: "What greater thing is there for two human souls than to feel that they are joined for life.", attr: "George Eliot" },
+      { text: "Love is the perception of individuals. Love is the extremely difficult realisation that something other than oneself is real.", attr: "Iris Murdoch"},
+      { text: "[T]he person one loves at first is not the person one loves at last, and that love is not an end but a process through which one person attempts to know another.", attr: "John Williams, Stoner" },
+    ],
+    two: [
+      { text: "You run the romantic gauntlet for decades without knowing who exactly it is you're giving and taking such a battering in order to reach. You run the gauntlet without knowing whether the person whose favour you seek will even be there... And then, by some stroke of fortune, the gauntlet concludes, the person does exist after all, and you become that perpetually astonished lover from so many of the songs you used to find endlessly disingenuous.", attr: "[Otto Shin], Helen Oyeyemi, Peaces" },
+      { text: "i carry your heart with me(i carry it in my heart)i am never without it(anywhere i go you go,my dear;and whatever is done by only me is your doing...)", attr: "E.E. Cummings" },
+    ],
+    three: [
+      { text: "A lover identifies himself with what he loves. In virtue of this identification, protecting the interests of his beloved is necessarily among the lover's own interests. The interests of his beloved are not actually other than his at all. They are his interests too.", attr: "Harry G. Frankfurt" },
+      { text: "All you need is love (ba ba ba ba ba), all you need is love (ba ba ba ba ba), all you need is love, love, love is all you need.", attr: "The Beatles" },
+    ],
+  };
+
+  const FADE     = 1600;   /* keep in step with the opacity transition in the CSS */
+  const FLOOR    = 7.5;    /* rem — matches .quote-box min-height */
+
+  /* Each quote holds for as long as it takes to read, rather than a flat
+     interval — the long ones need a good while, and the short ones would
+     only sit there getting stale. Raise READ_MS for a more leisurely page. */
+  const READ_MS  = 65;     /* reading time allowed per character */
+  const HOLD_MIN = 9000;   /* but nothing flicks past faster than this... */
+  const HOLD_MAX = 60000;  /* ...nor outstays its welcome for longer than this */
+
+  function hold(q) {
+    return Math.min(HOLD_MAX, Math.max(HOLD_MIN, q.text.length * READ_MS));
+  }
+
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  function nextQuote() {
-    i = (i + 1) % usable.length;
-    if (reduced) {
-      textEl.textContent = usable[i].text;
-      attrEl.textContent = usable[i].attr;
-      return;
-    }
-    box.classList.add('quote-fading');
-    setTimeout(() => {
-      textEl.textContent = usable[i].text;
-      attrEl.textContent = usable[i].attr;
-      box.classList.remove('quote-fading');
-    }, 900);
+  const blocks = Array.prototype.map.call(
+    document.querySelectorAll('.quote-box[data-quotes]'),
+    box => ({
+      box,
+      list: (quoteSets[box.dataset.quotes] || []).filter(q => q.text.trim() !== ''),
+      textEl: box.querySelector('.quote-text'),
+      attrEl: box.querySelector('.quote-attr'),
+      i: 0,
+      timer: null,
+      running: false,
+      measuredAt: -1,   /* the box width the reserved height was worked out at */
+    })
+  ).filter(b => b.list.length > 0);
+
+  function paint(b, n) {
+    const q = b.list[n];
+    const size = q.text.length > 300 ? ' is-xlong' : q.text.length > 170 ? ' is-long' : '';
+    b.textEl.className = 'quote-text' + size;
+    b.textEl.textContent = q.text;
+    b.attrEl.textContent = q.attr;
   }
-  setInterval(nextQuote, 9000);
+
+  /* Reserve the height of the tallest quote in the band. Every state in here
+     is measured and replaced inside one frame, so none of it is painted. */
+  function measure(b) {
+    const width = b.box.clientWidth;
+    /* Not laid out yet (hidden tab, pane not shown). Measuring now would bake
+       in a one-word-per-line height, so leave it and wait for a real width. */
+    if (!width) return;
+    b.box.style.minHeight = '0px';
+    let tallest = 0;
+    b.list.forEach((q, n) => {
+      paint(b, n);
+      tallest = Math.max(tallest, b.box.offsetHeight);
+    });
+    paint(b, b.i);
+    const floorPx = FLOOR * parseFloat(getComputedStyle(document.documentElement).fontSize);
+    b.box.style.minHeight = Math.max(tallest, floorPx) + 'px';
+    b.measuredAt = width;
+  }
+
+  function reserve() { blocks.forEach(measure); }
+
+  function schedule(b) {
+    clearTimeout(b.timer);
+    b.timer = setTimeout(() => advance(b), hold(b.list[b.i]));
+  }
+
+  function advance(b) {
+    const next = (b.i + 1) % b.list.length;
+    const swap = () => {
+      b.i = next;
+      paint(b, next);
+      b.box.classList.remove('quote-fading');
+      if (b.running) schedule(b);   /* may have scrolled away mid-fade */
+    };
+    if (reduced) { swap(); return; }
+    b.box.classList.add('quote-fading');
+    /* let the fade finish either way, so the box can't be left at opacity 0 */
+    setTimeout(swap, FADE);
+  }
+
+  function start(b) {
+    if (b.running || b.list.length < 2) return;
+    b.running = true;
+    schedule(b);
+  }
+  function stop(b) {
+    b.running = false;
+    clearTimeout(b.timer);
+    b.timer = null;
+  }
+
+  reserve();
+  /* the webfont lands after first paint and changes the metrics — measure again */
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(reserve);
+
+  /* Re-measure whenever a band's width actually changes: window resize, phone
+     rotation, or the page finally being laid out after loading out of sight.
+     Keyed on width alone, so writing min-height can't feed back into this. */
+  if ('ResizeObserver' in window) {
+    const timers = new WeakMap();
+    const ro = new ResizeObserver(entries => {
+      entries.forEach(e => {
+        const b = blocks.find(x => x.box === e.target);
+        if (!b || b.box.clientWidth === b.measuredAt) return;
+        clearTimeout(timers.get(b.box));
+        timers.set(b.box, setTimeout(() => measure(b), 100));
+      });
+    });
+    blocks.forEach(b => ro.observe(b.box));
+  } else {
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(reserve, 150);
+    });
+  }
+
+  /* Only run a band's timer while it is on screen, so a quote is always
+     given its full nine seconds from the moment you scroll to it. */
+  if ('IntersectionObserver' in window) {
+    const seen = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        const b = blocks.find(x => x.box === e.target);
+        if (!b) return;
+        if (e.isIntersecting) { start(b); } else { stop(b); }
+      });
+    }, { threshold: 0.35 });
+    blocks.forEach(b => seen.observe(b.box));
+  } else {
+    blocks.forEach(start);
+  }
 </script>
 
 </body>
